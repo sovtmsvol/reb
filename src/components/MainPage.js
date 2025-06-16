@@ -115,7 +115,7 @@ function MainPage() {
       />
 
       <button className="add-button" onClick={() => setModalOpen(true)}>
-        ➕ Додати засіб РЕБ
+        Додати засіб РЕБ
       </button>
 
       <table className="reb-table">
