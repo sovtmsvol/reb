@@ -1,4 +1,3 @@
-// src/components/RebModalForm.js
 import React, { useState } from "react";
 import "./RebModalForm.css";
 
@@ -21,7 +20,6 @@ function RebModalForm({ onClose, onSave }) {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
-      // Масив файлів або один файл
       if (name === "techStateFiles") {
         setFormData((prev) => ({ ...prev, [name]: files }));
       } else {
@@ -38,10 +36,10 @@ function RebModalForm({ onClose, onSave }) {
   };
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-backdrop">
       <div className="modal-content">
         <h2>Додати новий засіб РЕБ</h2>
-        <form onSubmit={handleSubmit}>
+        <form className="reb-form" onSubmit={handleSubmit}>
           <label>
             Назва:
             <input type="text" name="name" value={formData.name} onChange={handleChange} required />
@@ -102,9 +100,9 @@ function RebModalForm({ onClose, onSave }) {
             <input type="text" name="responsible" value={formData.responsible} onChange={handleChange} />
           </label>
 
-          <div className="modal-actions">
-            <button type="submit">Зберегти</button>
-            <button type="button" onClick={onClose}>Скасувати</button>
+          <div className="form-buttons">
+            <button type="submit" className="save-button">Зберегти</button>
+            <button type="button" className="cancel-button" onClick={onClose}>Скасувати</button>
           </div>
         </form>
       </div>
