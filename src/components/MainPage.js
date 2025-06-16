@@ -68,26 +68,35 @@ function MainPage() {
   };
 
   async function uploadFile(file, folder) {
-    if (!file || !(file instanceof File)) return null;
-
-    const safeName = sanitizeFileName(file.name);
-    const filePath = `${folder}/${safeName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("reb-files")
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      console.error("Помилка при завантаженні файлу:", uploadError);
-      return null;
-    }
-
-    const { data: urlData } = supabase.storage
-      .from("reb-files")
-      .getPublicUrl(filePath);
-
-    return { url: urlData.publicUrl, name: file.name };
+  if (!file || !(file instanceof File) || file.size === 0) {
+    console.warn("Порожній або недійсний файл:", file);
+    return null;
   }
+
+  const safeName = sanitizeFileName(file.name);
+  const filePath = `${folder}/${safeName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("reb-files")
+    .upload(filePath, file, {
+      upsert: true, // 🔧 дозволяє перезапис
+      contentType: file.type || "application/octet-stream" // 🔧 безпечний тип
+    });
+
+  if (uploadError) {
+    console.error("Помилка при завантаженні файлу:", uploadError);
+    return null;
+  }
+
+  const { data: urlData } = supabase.storage
+    .from("reb-files")
+    .getPublicUrl(filePath);
+
+  return {
+    url: urlData.publicUrl,
+    name: file.name
+  };
+}
 
   const handleSave = async (data) => {
     try {
@@ -108,6 +117,22 @@ function MainPage() {
 
       const { data: newRow, error } = await supabase
         .from("rebs")
+        
+        console.log("Формуємо об'єкт для вставки:", {
+  name: data.name,
+  serial: data.serial,
+  order: data.order,
+  order_file: orderFile,
+  acceptance: data.acceptance,
+  acceptance_file: acceptanceFile,
+  donation: data.donation,
+  donation_file: donationFile,
+  tech_state: data.techState,
+  tech_state_files: techStateFiles,
+  location: data.location,
+  responsible: data.responsible
+});
+        
         .insert([
           {
             name: data.name,
