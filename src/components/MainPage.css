@@ -1,0 +1,91 @@
+/* src/components/MainPage.css */
+body {
+  margin: 0;
+  background-color: #FAFBFD;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.main-container {
+  max-width: 2200px;
+  margin: 20px auto;
+  padding: 10px;
+  background-color: #FAFBFD;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #4D766E;
+}
+
+.add-button {
+  background-color: #4D766E;
+  color: #FAFBFD;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  margin: 0 auto 30px auto;
+  display: block;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-button:hover {
+  background-color: #4D766E;
+}
+
+.reb-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow-x: auto;
+}
+
+.reb-table th,
+.reb-table td {
+  border: 1px solid #dee2e6;
+  padding: 10px;
+  text-align: center;
+}
+
+.reb-table th {
+  background-color: #f1f3f5;
+  color: #495057;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.reb-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.reb-table tr:hover {
+  background-color: #eef6ff;
+}
+
+.search-input {
+  display: block;
+  margin: 0 auto 20px auto;
+  padding: 10px 16px;
+  width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+}
+.reb-table tbody tr td {
+  font-size: 12px; /* Зменшений шрифт у рядках */
+  padding: 6px 8px;
+}

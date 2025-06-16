@@ -1,0 +1,12 @@
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBsv9mUEDbtNup8q1il8cq2yT37XCvyHJ0",
+  authDomain: "sovtmsvol-2bc33.firebaseapp.com",
+  projectId: "sovtmsvol-2bc33",
+  storageBucket: "sovtmsvol-2bc33.firebasestorage.app",
+  messagingSenderId: "650112060949",
+  appId: "1:650112060949:web:f8223f1801c6ca49fac81c"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
