@@ -1,3 +1,4 @@
+// MainPage.js
 import React, { useState, useEffect } from "react";
 import RebModalForm from "./RebModalForm";
 import "./MainPage.css";
@@ -59,7 +60,7 @@ function MainPage() {
   }, []);
 
   async function uploadFile(file, folder) {
-    if (!file) return null;
+    if (!file || !(file instanceof File)) return null;
 
     const filename = `${folder}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage
@@ -121,8 +122,6 @@ function MainPage() {
         throw error;
       }
 
-      console.log("Новий рядок додано:", newRow);
-
       setRows((prev) => [
         ...prev,
         {
@@ -168,7 +167,7 @@ function MainPage() {
       />
 
       <button className="add-button" onClick={() => setModalOpen(true)}>
-        Додати засіб РЕБ
+        + Додати засіб РЕБ
       </button>
 
       <table className="reb-table">
@@ -180,65 +179,44 @@ function MainPage() {
           </tr>
         </thead>
         <tbody>
-          {filteredRows.map((row) => (
+          {filteredRows.map((row, rowIndex) => (
             <tr key={row.id}>
-              <td>{row.id}</td>
-              <td>{row.fields[0]}</td>
-              <td>{row.fields[1]}</td>
-              <td>{row.fields[2]}</td>
+              <td>{rowIndex + 1}</td>
+              {row.fields.map((field, i) => {
+                if (i === 3 || i === 5 || i === 7) {
+                  return (
+                    <td key={i}>
+                      {field ? (
+                        <a href={field.url} target="_blank" rel="noopener noreferrer">
+                          {field.name}
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                  );
+                }
 
-              <td>
-                {row.fields[3] ? (
-                  <a href={row.fields[3].url} target="_blank" rel="noopener noreferrer">
-                    {row.fields[3].name}
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </td>
+                if (i === 9) {
+                  return (
+                    <td key={i}>
+                      {Array.isArray(field) && field.length > 0 ? (
+                        field.map((fileObj, j) => (
+                          <div key={j}>
+                            <a href={fileObj.url} target="_blank" rel="noopener noreferrer">
+                              {fileObj.name}
+                            </a>
+                          </div>
+                        ))
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                  );
+                }
 
-              <td>{row.fields[4]}</td>
-
-              <td>
-                {row.fields[5] ? (
-                  <a href={row.fields[5].url} target="_blank" rel="noopener noreferrer">
-                    {row.fields[5].name}
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </td>
-
-              <td>{row.fields[6]}</td>
-
-              <td>
-                {row.fields[7] ? (
-                  <a href={row.fields[7].url} target="_blank" rel="noopener noreferrer">
-                    {row.fields[7].name}
-                  </a>
-                ) : (
-                  "-"
-                )}
-              </td>
-
-              <td>{row.fields[8]}</td>
-
-              <td>
-                {Array.isArray(row.fields[9]) && row.fields[9].length > 0 ? (
-                  row.fields[9].map((fileObj, i) => (
-                    <div key={i}>
-                      <a href={fileObj.url} target="_blank" rel="noopener noreferrer">
-                        {fileObj.name}
-                      </a>
-                    </div>
-                  ))
-                ) : (
-                  "-"
-                )}
-              </td>
-
-              <td>{row.fields[10]}</td>
-              <td>{row.fields[11]}</td>
+                return <td key={i}>{field || "-"}</td>;
+              })}
             </tr>
           ))}
         </tbody>
