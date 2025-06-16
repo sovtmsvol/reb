@@ -1,4 +1,3 @@
-// MainPage.js
 import React, { useState, useEffect } from "react";
 import RebModalForm from "./RebModalForm";
 import "./MainPage.css";
@@ -59,13 +58,24 @@ function MainPage() {
     fetchData();
   }, []);
 
+  const sanitizeFileName = (originalName) => {
+    const timestamp = Date.now();
+    const ext = originalName.split(".").pop();
+    const base = originalName
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "_");
+    return `${timestamp}_${base}.${ext}`;
+  };
+
   async function uploadFile(file, folder) {
     if (!file || !(file instanceof File)) return null;
 
-    const filename = `${folder}/${Date.now()}_${file.name}`;
+    const safeName = sanitizeFileName(file.name);
+    const filePath = `${folder}/${safeName}`;
+
     const { error: uploadError } = await supabase.storage
       .from("reb-files")
-      .upload(filename, file);
+      .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
       console.error("Помилка при завантаженні файлу:", uploadError);
@@ -74,7 +84,7 @@ function MainPage() {
 
     const { data: urlData } = supabase.storage
       .from("reb-files")
-      .getPublicUrl(filename);
+      .getPublicUrl(filePath);
 
     return { url: urlData.publicUrl, name: file.name };
   }
@@ -183,6 +193,7 @@ function MainPage() {
             <tr key={row.id}>
               <td>{rowIndex + 1}</td>
               {row.fields.map((field, i) => {
+                // Однофайлові посилання
                 if (i === 3 || i === 5 || i === 7) {
                   return (
                     <td key={i}>
@@ -197,6 +208,7 @@ function MainPage() {
                   );
                 }
 
+                // Масив файлів
                 if (i === 9) {
                   return (
                     <td key={i}>
@@ -215,6 +227,7 @@ function MainPage() {
                   );
                 }
 
+                // Інші поля
                 return <td key={i}>{field || "-"}</td>;
               })}
             </tr>
