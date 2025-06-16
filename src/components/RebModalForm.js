@@ -1,3 +1,4 @@
+// src/components/RebModalForm.js
 import React, { useState } from "react";
 import "./RebModalForm.css";
 
@@ -12,59 +13,35 @@ function RebModalForm({ onClose, onSave }) {
     donation: "",
     donationFile: null,
     techState: "",
-    techStateFiles: [], // кілька файлів
+    techStateFiles: [],
     location: "",
     responsible: ""
   });
 
-  // Для відображення назв файлів
-  const [filePreviews, setFilePreviews] = useState({
-    orderFileName: "",
-    acceptanceFileName: "",
-    donationFileName: "",
-    techStateFileNames: []
-  });
-
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e) => {
-    const { name, files } = e.target;
-
-    if (name === "techStateFiles") {
-      // Кілька файлів
-      setFormData(prev => ({ ...prev, [name]: files }));
-      setFilePreviews(prev => ({
-        ...prev,
-        techStateFileNames: Array.from(files).map(f => f.name)
-      }));
+    const { name, value, files } = e.target;
+    if (files) {
+      // Масив файлів або один файл
+      if (name === "techStateFiles") {
+        setFormData((prev) => ({ ...prev, [name]: files }));
+      } else {
+        setFormData((prev) => ({ ...prev, [name]: files[0] }));
+      }
     } else {
-      // Окремий файл
-      setFormData(prev => ({ ...prev, [name]: files[0] }));
-      setFilePreviews(prev => ({ ...prev, [`${name}Name`]: files[0]?.name || "" }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Валідація (при бажанні додати)
-
-    // Відправляємо дані в MainPage через onSave
-    onSave(formData);
-
-    // Закриваємо форму
-    onClose();
+    await onSave(formData);
   };
 
   return (
-    <div className="modal-backdrop">
+    <div className="modal-overlay">
       <div className="modal-content">
-        <h2>Додати засіб РЕБ</h2>
-        <form onSubmit={handleSubmit} className="reb-form">
-
+        <h2>Додати новий засіб РЕБ</h2>
+        <form onSubmit={handleSubmit}>
           <label>
             Назва:
             <input type="text" name="name" value={formData.name} onChange={handleChange} required />
@@ -72,57 +49,47 @@ function RebModalForm({ onClose, onSave }) {
 
           <label>
             Заводський номер:
-            <input type="text" name="serial" value={formData.serial} onChange={handleChange} />
+            <input type="text" name="serial" value={formData.serial} onChange={handleChange} required />
           </label>
 
           <label>
-            Наряд (№ та дата):
+            Наряд:
             <input type="text" name="order" value={formData.order} onChange={handleChange} />
           </label>
 
           <label>
-            Документ наряду (PDF):
-            <input type="file" name="orderFile" accept="application/pdf" onChange={handleFileChange} />
-            {filePreviews.orderFileName && <span className="file-name">{filePreviews.orderFileName}</span>}
+            Документ наряду (PDF, JPG тощо):
+            <input type="file" name="orderFile" onChange={handleChange} />
           </label>
 
           <label>
-            Акт приймання (№ та дата):
+            Акт приймання:
             <input type="text" name="acceptance" value={formData.acceptance} onChange={handleChange} />
           </label>
 
           <label>
-            Документ акту приймання (PDF):
-            <input type="file" name="acceptanceFile" accept="application/pdf" onChange={handleFileChange} />
-            {filePreviews.acceptanceFileName && <span className="file-name">{filePreviews.acceptanceFileName}</span>}
+            Документ акту приймання:
+            <input type="file" name="acceptanceFile" onChange={handleChange} />
           </label>
 
           <label>
-            Благодійка (№ та дата):
+            Благодійка:
             <input type="text" name="donation" value={formData.donation} onChange={handleChange} />
           </label>
 
           <label>
-            Акт приймання благодійки (PDF):
-            <input type="file" name="donationFile" accept="application/pdf" onChange={handleFileChange} />
-            {filePreviews.donationFileName && <span className="file-name">{filePreviews.donationFileName}</span>}
+            Документ благодійки:
+            <input type="file" name="donationFile" onChange={handleChange} />
           </label>
 
           <label>
-            Акт технічного стану (№ та дата):
+            Акт технічного стану:
             <input type="text" name="techState" value={formData.techState} onChange={handleChange} />
           </label>
 
           <label>
-            Акти технічного стану документ (PDF, кілька):
-            <input type="file" name="techStateFiles" accept="application/pdf" multiple onChange={handleFileChange} />
-            {filePreviews.techStateFileNames.length > 0 && (
-              <ul className="file-list">
-                {filePreviews.techStateFileNames.map((name, i) => (
-                  <li key={i}>{name}</li>
-                ))}
-              </ul>
-            )}
+            Документи акту техстану (можна кілька):
+            <input type="file" name="techStateFiles" multiple onChange={handleChange} />
           </label>
 
           <label>
@@ -135,9 +102,9 @@ function RebModalForm({ onClose, onSave }) {
             <input type="text" name="responsible" value={formData.responsible} onChange={handleChange} />
           </label>
 
-          <div className="form-buttons">
-            <button type="submit" className="save-button">Зберегти</button>
-            <button type="button" className="cancel-button" onClick={onClose}>Відміна</button>
+          <div className="modal-actions">
+            <button type="submit">Зберегти</button>
+            <button type="button" onClick={onClose}>Скасувати</button>
           </div>
         </form>
       </div>

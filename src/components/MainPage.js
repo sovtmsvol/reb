@@ -2,10 +2,7 @@
 import React, { useState, useEffect } from "react";
 import RebModalForm from "./RebModalForm";
 import "./MainPage.css";
-
-import { collection, addDoc, getDocs } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../firebase-config";
+import { supabase } from "../supabaseClient";
 
 const COLUMN_TITLES = [
   "№",
@@ -28,77 +25,122 @@ function MainPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Завантажуємо дані з Firestore при першому рендері
   useEffect(() => {
     async function fetchData() {
-      const querySnapshot = await getDocs(collection(db, "rebs"));
-      const loadedRows = [];
-      querySnapshot.forEach((doc) => {
-        loadedRows.push({ id: doc.id, fields: doc.data().fields });
-      });
-      setRows(loadedRows);
+      const { data, error } = await supabase
+        .from("rebs")
+        .select("*")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Помилка при завантаженні:", error);
+      } else {
+        const loadedRows = data.map((row) => ({
+          id: row.id,
+          fields: [
+            row.name,
+            row.serial,
+            row.order,
+            row.order_file,
+            row.acceptance,
+            row.acceptance_file,
+            row.donation,
+            row.donation_file,
+            row.tech_state,
+            row.tech_state_files,
+            row.location,
+            row.responsible
+          ]
+        }));
+        setRows(loadedRows);
+      }
     }
     fetchData();
   }, []);
 
-  // Функція для завантаження файлу в Storage та отримання URL
   async function uploadFile(file, folder) {
     if (!file) return null;
-    const storageRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-    return { url, name: file.name };
+    const filename = `${folder}/${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from("reb-files")
+      .upload(filename, file);
+    if (uploadError) {
+      console.error("Помилка при завантаженні файлу:", uploadError);
+      return null;
+    }
+    const { data: urlData } = supabase.storage
+      .from("reb-files")
+      .getPublicUrl(filename);
+    return { url: urlData.publicUrl, name: file.name };
   }
 
-  // Обробник збереження нового рядка з завантаженням файлів
   const handleSave = async (data) => {
     try {
-      // Завантажуємо файли та отримуємо URL (якщо вони є)
       const orderFile = await uploadFile(data.orderFile, "orderFiles");
       const acceptanceFile = await uploadFile(data.acceptanceFile, "acceptanceFiles");
       const donationFile = await uploadFile(data.donationFile, "donationFiles");
 
-      // techStateFiles - масив файлів, завантажуємо всі
       let techStateFiles = [];
       if (data.techStateFiles && data.techStateFiles.length > 0) {
         techStateFiles = await Promise.all(
-          Array.from(data.techStateFiles).map(file => uploadFile(file, "techStateFiles"))
+          Array.from(data.techStateFiles).map((file) =>
+            uploadFile(file, "techStateFiles")
+          )
         );
       }
 
-      // Формуємо об'єкт для збереження у Firestore
-      const newRow = {
-        fields: [
-          data.name,
-          data.serial,
-          data.order,
-          orderFile,
-          data.acceptance,
-          acceptanceFile,
-          data.donation,
-          donationFile,
-          data.techState,
-          techStateFiles,
-          data.location,
-          data.responsible
-        ]
-      };
+      const { data: newRow, error } = await supabase
+        .from("rebs")
+        .insert([
+          {
+            name: data.name,
+            serial: data.serial,
+            order: data.order,
+            order_file: orderFile,
+            acceptance: data.acceptance,
+            acceptance_file: acceptanceFile,
+            donation: data.donation,
+            donation_file: donationFile,
+            tech_state: data.techState,
+            tech_state_files: techStateFiles,
+            location: data.location,
+            responsible: data.responsible
+          }
+        ])
+        .select()
+        .single();
 
-      // Зберігаємо документ у Firestore
-      const docRef = await addDoc(collection(db, "rebs"), newRow);
+      if (error) throw error;
 
-      // Додаємо новий рядок у локальний стан для відображення
-      setRows(prev => [...prev, { id: docRef.id, fields: newRow.fields }]);
+      setRows((prev) => [
+        ...prev,
+        {
+          id: newRow.id,
+          fields: [
+            newRow.name,
+            newRow.serial,
+            newRow.order,
+            newRow.order_file,
+            newRow.acceptance,
+            newRow.acceptance_file,
+            newRow.donation,
+            newRow.donation_file,
+            newRow.tech_state,
+            newRow.tech_state_files,
+            newRow.location,
+            newRow.responsible
+          ]
+        }
+      ]);
 
-      // Закриваємо модалку
       setModalOpen(false);
     } catch (error) {
-      console.error("Помилка при збереженні даних:", error);
-      alert("Сталася помилка при збереженні даних. Перевірте консоль.");
+      console.error("Помилка при збереженні:", error);
+      alert("Не вдалося зберегти. Перевір консоль.");
     }
   };
 
-  const filteredRows = rows.filter(row =>
+  const filteredRows = rows.filter((row) =>
     row.fields[0]?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -139,7 +181,9 @@ function MainPage() {
                   <a href={row.fields[3].url} target="_blank" rel="noopener noreferrer">
                     {row.fields[3].name}
                   </a>
-                ) : "-"}
+                ) : (
+                  "-"
+                )}
               </td>
 
               <td>{row.fields[4]}</td>
@@ -149,7 +193,9 @@ function MainPage() {
                   <a href={row.fields[5].url} target="_blank" rel="noopener noreferrer">
                     {row.fields[5].name}
                   </a>
-                ) : "-"}
+                ) : (
+                  "-"
+                )}
               </td>
 
               <td>{row.fields[6]}</td>
@@ -159,7 +205,9 @@ function MainPage() {
                   <a href={row.fields[7].url} target="_blank" rel="noopener noreferrer">
                     {row.fields[7].name}
                   </a>
-                ) : "-"}
+                ) : (
+                  "-"
+                )}
               </td>
 
               <td>{row.fields[8]}</td>
@@ -173,7 +221,9 @@ function MainPage() {
                       </a>
                     </div>
                   ))
-                ) : "-"}
+                ) : (
+                  "-"
+                )}
               </td>
 
               <td>{row.fields[10]}</td>
