@@ -1,7 +1,11 @@
 // src/components/MainPage.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RebModalForm from "./RebModalForm";
 import "./MainPage.css";
+
+import { collection, addDoc, getDocs } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../firebase-config";
 
 const COLUMN_TITLES = [
   "№",
@@ -24,33 +28,74 @@ function MainPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
 
-  const handleAddReb = () => {
-    setModalOpen(true);
-  };
+  // Завантажуємо дані з Firestore при першому рендері
+  useEffect(() => {
+    async function fetchData() {
+      const querySnapshot = await getDocs(collection(db, "rebs"));
+      const loadedRows = [];
+      querySnapshot.forEach((doc) => {
+        loadedRows.push({ id: doc.id, fields: doc.data().fields });
+      });
+      setRows(loadedRows);
+    }
+    fetchData();
+  }, []);
 
-  const handleSave = (data) => {
-    const newRow = {
-      id: rows.length + 1,
-      fields: [
-        data.name,
-        data.serial,
-        data.order,
-        data.orderFile ? { url: URL.createObjectURL(data.orderFile), name: data.orderFile.name } : null,
-        data.acceptance,
-        data.acceptanceFile ? { url: URL.createObjectURL(data.acceptanceFile), name: data.acceptanceFile.name } : null,
-        data.donation,
-        data.donationFile ? { url: URL.createObjectURL(data.donationFile), name: data.donationFile.name } : null,
-        data.techState,
-        data.techStateFiles.length > 0
-          ? Array.from(data.techStateFiles).map(file => ({ url: URL.createObjectURL(file), name: file.name }))
-          : [],
-        data.location,
-        data.responsible
-      ]
-    };
+  // Функція для завантаження файлу в Storage та отримання URL
+  async function uploadFile(file, folder) {
+    if (!file) return null;
+    const storageRef = ref(storage, `${folder}/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    return { url, name: file.name };
+  }
 
-    setRows(prev => [...prev, newRow]);
-    setModalOpen(false);
+  // Обробник збереження нового рядка з завантаженням файлів
+  const handleSave = async (data) => {
+    try {
+      // Завантажуємо файли та отримуємо URL (якщо вони є)
+      const orderFile = await uploadFile(data.orderFile, "orderFiles");
+      const acceptanceFile = await uploadFile(data.acceptanceFile, "acceptanceFiles");
+      const donationFile = await uploadFile(data.donationFile, "donationFiles");
+
+      // techStateFiles - масив файлів, завантажуємо всі
+      let techStateFiles = [];
+      if (data.techStateFiles && data.techStateFiles.length > 0) {
+        techStateFiles = await Promise.all(
+          Array.from(data.techStateFiles).map(file => uploadFile(file, "techStateFiles"))
+        );
+      }
+
+      // Формуємо об'єкт для збереження у Firestore
+      const newRow = {
+        fields: [
+          data.name,
+          data.serial,
+          data.order,
+          orderFile,
+          data.acceptance,
+          acceptanceFile,
+          data.donation,
+          donationFile,
+          data.techState,
+          techStateFiles,
+          data.location,
+          data.responsible
+        ]
+      };
+
+      // Зберігаємо документ у Firestore
+      const docRef = await addDoc(collection(db, "rebs"), newRow);
+
+      // Додаємо новий рядок у локальний стан для відображення
+      setRows(prev => [...prev, { id: docRef.id, fields: newRow.fields }]);
+
+      // Закриваємо модалку
+      setModalOpen(false);
+    } catch (error) {
+      console.error("Помилка при збереженні даних:", error);
+      alert("Сталася помилка при збереженні даних. Перевірте консоль.");
+    }
   };
 
   const filteredRows = rows.filter(row =>
@@ -69,7 +114,7 @@ function MainPage() {
         onChange={(e) => setSearchQuery(e.target.value)}
       />
 
-      <button className="add-button" onClick={handleAddReb}>
+      <button className="add-button" onClick={() => setModalOpen(true)}>
         ➕ Додати засіб РЕБ
       </button>
 
@@ -94,9 +139,7 @@ function MainPage() {
                   <a href={row.fields[3].url} target="_blank" rel="noopener noreferrer">
                     {row.fields[3].name}
                   </a>
-                ) : (
-                  "-"
-                )}
+                ) : "-"}
               </td>
 
               <td>{row.fields[4]}</td>
@@ -106,9 +149,7 @@ function MainPage() {
                   <a href={row.fields[5].url} target="_blank" rel="noopener noreferrer">
                     {row.fields[5].name}
                   </a>
-                ) : (
-                  "-"
-                )}
+                ) : "-"}
               </td>
 
               <td>{row.fields[6]}</td>
@@ -118,9 +159,7 @@ function MainPage() {
                   <a href={row.fields[7].url} target="_blank" rel="noopener noreferrer">
                     {row.fields[7].name}
                   </a>
-                ) : (
-                  "-"
-                )}
+                ) : "-"}
               </td>
 
               <td>{row.fields[8]}</td>
@@ -134,9 +173,7 @@ function MainPage() {
                       </a>
                     </div>
                   ))
-                ) : (
-                  "-"
-                )}
+                ) : "-"}
               </td>
 
               <td>{row.fields[10]}</td>
