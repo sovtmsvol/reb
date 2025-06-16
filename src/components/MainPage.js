@@ -1,4 +1,3 @@
-// src/components/MainPage.js
 import React, { useState, useEffect } from "react";
 import RebModalForm from "./RebModalForm";
 import "./MainPage.css";
@@ -55,27 +54,34 @@ function MainPage() {
         setRows(loadedRows);
       }
     }
+
     fetchData();
   }, []);
 
   async function uploadFile(file, folder) {
     if (!file) return null;
+
     const filename = `${folder}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage
       .from("reb-files")
       .upload(filename, file);
+
     if (uploadError) {
       console.error("Помилка при завантаженні файлу:", uploadError);
       return null;
     }
+
     const { data: urlData } = supabase.storage
       .from("reb-files")
       .getPublicUrl(filename);
+
     return { url: urlData.publicUrl, name: file.name };
   }
 
   const handleSave = async (data) => {
     try {
+      console.log("Форма відправлена з даними:", data);
+
       const orderFile = await uploadFile(data.orderFile, "orderFiles");
       const acceptanceFile = await uploadFile(data.acceptanceFile, "acceptanceFiles");
       const donationFile = await uploadFile(data.donationFile, "donationFiles");
@@ -110,7 +116,12 @@ function MainPage() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Помилка вставки в Supabase:", error);
+        throw error;
+      }
+
+      console.log("Новий рядок додано:", newRow);
 
       setRows((prev) => [
         ...prev,
